@@ -41,22 +41,28 @@ void add_end(node *listp, int valor){
 	act = newp;
 }
 
-/*
-// insert: inserta newp ordenado en listp
+
+// insert: inserta nuevo valor ordenado en listp
 node *insert(node *listp, int valor){
 	node *newp = (node *)malloc(sizeof(node));
 	node *act = listp, *ant = NULL, *sig = NULL;
 
-	newp->elemento = valor;
 	while (act && act->elemento < valor){
 		sig = XOR(ant, act->ant_sig);
 		ant = act;
 		act = sig;
 	}
-	sig = XOR(ant, act->ant_sig);
+	while (act){
+                sig = XOR(ant, act->ant_sig);
+                act->elemento = sig->elemento;
+                act->ant_sig = sig->ant_sig;
+                ant = act;
+                act = sig;
+        }
 	newp->ant_sig = XOR(listp, ant);
-	sig = newp;
-}*/
+	newp->elemento = ant->elemento;
+	ant = newp;
+}
 
 // lookup: busca un numero en la lista
 node *lookup(node *listp, int valor){
@@ -102,12 +108,34 @@ void print(node *listp){
 
 // free_all: libera todos los elementos de listp
 node *free_all(node *listp){
+	node *act = *listp, *ant = NULL, *sig = NULL;
 
+	while (act){
+		sig = XOR(ant, act->ant_sig);
+		ant = act;
+		act = sig;
+		free(ant);
+	}
 }
 
 // del_item: elimina la primera ocurrencia de valor
-node *del_item(node *listp, int valor){
+void del_item(node *listp, int valor){
+	int i = 0;
+	node *act = *listp, *ant = NULL, *sig = NULL;
 
+	while (act && act->elemento != valor){
+		sig = XOR(ant, act->ant_sig);
+		ant = act;
+		act = sig;
+        }
+	while (act){
+		sig = XOR(ant, act->ant_sig);
+		act->elemento = sig->elemento;
+		act->ant_sig = sig->ant_sig;
+		ant = act;
+		act = sig;
+	}
+	free(ant);
 }
 
 // is_empty: retorna 1 si esta vacia 0 en caso contrario
