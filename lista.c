@@ -1,146 +1,156 @@
+/* Lista doblemente enlazada mediante un unico puntero */
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
+#include <inttypes.h>
 
+/* Estructura de los nodos */
 typedef struct nodo{
-	int elemento;
-	struct nodo *ant_sig;
-} node;
+    int elemento;
+    struct nodo *ant_sig; /* XOR del nodo siguiente con el anterior */
+}nodo_t;
 
-// Retornar el valor XOR de las direcciones de los nodos
-node *XOR(node *a, node *b){
-	return (node *)((uintptr_t)(a) ^ (uintptr_t)(b));
+/* Estructura de la lista */
+typedef struct lista{
+    nodo_t *cabeza, *cola;
+}lista_t;
+
+/* Retorna el valor XOR de las direcciones de los nodos */
+nodo_t* XOR(nodo_t *a, nodo_t *b){
+    return (nodo_t*)((uintptr_t)(a)^(uintptr_t)(b));
 }
 
-// add_front: añade newp al frente de listp
-void add_front(node **head, int valor){
-	node *newp = (node *)malloc(sizeof(node)), *sig = NULL;
-	
-	newp->elemento = valor;
-	newp->ant_sig = XOR(*head, NULL);
-	if (*head){
-		sig = XOR((*head)->ant_sig, NULL);
-		(*head)->ant_sig = XOR(newp, sig);
-	}
-	*head = newp;
+// Funcion que guarda memoria y crea un nodo para la lista
+nodo_t* crearNodo(nodo_t *Nodo, int e){
+    // Guarda memoria para el nuevo nodo
+    Nodo = (nodo_t*)malloc(sizeof(nodo_t));
+    Nodo->elemento = e;
+
+    return Nodo;
 }
 
-// add_end añade newp al final de la listp
-void add_end(node *listp, int valor){
-	node *newp = (node *)malloc(sizeof(node));
-	node *act = listp, *ant = NULL, *sig = NULL;
-
-	newp->elemento = valor;
-	while (act){
-		sig = XOR(ant, act->ant_sig);
-		ant = act;
-		act = sig;
-	}
-	act = XOR(ant, act->ant_sig);
-	newp->ant_sig = XOR(listp, ant);
-	act = newp;
+// Crea una nueva lista
+void crearLista(lista_t *Lista){
+    Lista->cabeza = NULL;
+    Lista->cola = NULL;
 }
 
+// Retorna 1 si la lista esta vacia o 0 si no lo esta
+int esVacia(lista_t *Lista){
+    if (Lista->cabeza == NULL)
+        return 1;
+    return 0;
+}
 
-// insert: inserta nuevo valor ordenado en listp
-node *insert(node *listp, int valor){
-	node *newp = (node *)malloc(sizeof(node));
-	node *act = listp, *ant = NULL, *sig = NULL;
+// Inserta un nodo al inicio de la lista XOR y lo hace la nueva cabeza de la lista
+void insertarPrincipio(lista_t *Lista, int e){
+    nodo_t *nuevo = crearNodo(nuevo, e);
 
-	while (act && act->elemento < valor){
-		sig = XOR(ant, act->ant_sig);
-		ant = act;
-		act = sig;
-	}
-	while (act){
-                sig = XOR(ant, act->ant_sig);
-                act->elemento = sig->elemento;
-                act->ant_sig = sig->ant_sig;
-                ant = act;
-                act = sig;
+    // Como el nuevo elemento se ingresa al principio, ant_sig del nuevo nodo sera el XOR de la actual cabeza con NULL
+    nuevo->ant_sig = XOR(Lista->cabeza, NULL);
+
+    // Si la lista esta vacia, entonces se le asigna el nuevo a la cabeza y a la cola
+    if (esVacia(Lista)){
+        Lista->cabeza = nuevo;
+        Lista->cola = nuevo;
+    } // Si la lista no esta vacia, entonces ant_sig de la cabeza actual sera XOR del nuevo nodo y el nodo siguiente a la cabeza
+    else {
+        // Lista->cabeza->ant_sig sera XOR de NULL y el siguiente, entonces si hacemos XOR de ant_sig con NULL, tendremos siguiente
+        nodo_t *sig = XOR(Lista->cabeza->ant_sig, NULL);
+        Lista->cabeza->ant_sig = XOR(nuevo, sig);
+
+        // Cambiamos la cabeza
+        Lista->cabeza = nuevo;
+    }
+
+    printf("Se ingreso el elemento %d al inicio de la lista\n", e);
+}
+
+// Inserta un elemento al final de la lista
+void insertarFinal(lista_t *Lista, int e){
+    nodo_t *nuevo = crearNodo(nuevo, e);
+
+    // Como el nuevo elemento se ingresa al final, ant_sig del nuevo nodo sera el XOR de la actual cola con NULL
+    nuevo->ant_sig = XOR(Lista->cola, NULL);
+
+    // Si la lista esta vacia, entonces se le asigna el nuevo a la cabeza y a la cola
+    if (esVacia(Lista)){
+        Lista->cabeza = nuevo;
+        Lista->cola = nuevo;
+    }   // Si la lista no esta vacia, entonces ant_sig de la cola actual sera XOR del nuevo nodo y el nodo anterior a la cola 
+    else {
+        nodo_t *ant = XOR(Lista->cola->ant_sig, NULL);
+        Lista->cola->ant_sig = XOR(ant, nuevo);
+
+        //Cambiamos la cola
+        Lista->cola = nuevo;
+    }
+
+    printf("Se ingreso el elemento %d al final de la lista\n", e);
+}
+
+// Muestra la lista de inicio a fin
+void listarInicioAFinal(lista_t Lista){
+    nodo_t *actual = Lista.cabeza;
+    nodo_t *previo = NULL;
+    nodo_t *siguiente;
+
+    printf("Nodos de la lista doblemente enlazada\n");
+
+    printf("cabeza-->");
+    while(actual != NULL){
+        // Imprime el nodo
+        printf("%d ", actual->elemento);
+
+        /* Obtiene la direccion del siguiente nodo: actual->ant_sig
+        es siguiente^previo, entonces actual->ant_sig^previo sera
+        siguiente^previo^previo el cual es siguiente */
+        siguiente = XOR(previo, actual->ant_sig);
+
+        // Actualiza el previo y el actual para la siguiente iteracion
+        previo = actual;
+        actual = siguiente;
+    }
+    printf("\b<--cola\n");
+}
+
+// Muestra la lista desde el final hasta el inicio
+void listarFinalAInicio(lista_t Lista){
+    nodo_t *actual = Lista.cola;
+    nodo_t *siguiente = NULL;
+    nodo_t *previo;
+
+    printf("Nodos de la lista doblemente enlazada\n");
+
+    printf("cola-->");
+    while (actual != NULL){
+        printf("%d ", actual->elemento);
+
+        previo = XOR(siguiente, actual->ant_sig);
+
+        siguiente = actual;
+        actual = previo;
+    }
+    printf("\b<--cabeza\n");
+}
+
+// Busca la primera instancia de un elemento en la lista
+int buscar(lista_t Lista, int e){
+    nodo_t *actual = Lista.cabeza;
+    nodo_t *previo = NULL;
+    nodo_t *siguiente;
+
+    while (actual != NULL){
+        if (actual->elemento == e){
+            printf("Se consiguio el elemento %d en la lista\n", e);
+            return 1;
+        } else {
+            siguiente = XOR(previo, actual->ant_sig);
+
+            previo = actual;
+            actual = siguiente;
         }
-	newp->ant_sig = XOR(listp, ant);
-	newp->elemento = ant->elemento;
-	ant = newp;
-}
-
-// lookup: busca un numero en la lista
-node *lookup(node *listp, int valor){
-	node *act = listp, *ant = NULL, node *sig = NULL;
-
-	while (listp){
-		sig = XOR(ant, act->ant_sig);
-		ant = act;
-		act = sig;
-		if (act->elemento == valor)
-			return act;
-	}
-	return NULL;
-}
-
-// in_counter: cuenta los elementos en la lista
-int in_counter(node *listp){
-	node *sig = listp, *ant = NULL, node *sig = NULL;
-	int i = 0;
-
-	while (act){
-		sig = XOR(ant, act->ant_sig);
-		ant = act;
-		act = sig;
-		i++;
-	}
-	return i; 
-}
-
-// print: muestra los elementos en listp
-void print(node *listp){
-	node *act = listp, *ant = NULL, *sig = NULL;
-
-	printf("-->");
-	while (act){
-		printf("%d-->",act->elemento);
-		sig = XOR(ant, act->ant_sig);
-		ant = act;
-		act = sig;
-	}
-	printf("NULL\n");
-}
-
-// free_all: libera todos los elementos de listp
-node *free_all(node *listp){
-	node *act = *listp, *ant = NULL, *sig = NULL;
-
-	while (act){
-		sig = XOR(ant, act->ant_sig);
-		ant = act;
-		act = sig;
-		free(ant);
-	}
-}
-
-// del_item: elimina la primera ocurrencia de valor
-void del_item(node *listp, int valor){
-	int i = 0;
-	node *act = *listp, *ant = NULL, *sig = NULL;
-
-	while (act && act->elemento != valor){
-		sig = XOR(ant, act->ant_sig);
-		ant = act;
-		act = sig;
-        }
-	while (act){
-		sig = XOR(ant, act->ant_sig);
-		act->elemento = sig->elemento;
-		act->ant_sig = sig->ant_sig;
-		ant = act;
-		act = sig;
-	}
-	free(ant);
-}
-
-// is_empty: retorna 1 si esta vacia 0 en caso contrario
-int is_empty(node *listp){
-	if (!listp)
-		return 1;
-	return 0;
+    }
+    printf("No se consiguio el elemento %d\n", e);
+    return 0;
 }
